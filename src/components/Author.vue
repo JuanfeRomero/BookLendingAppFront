@@ -55,6 +55,7 @@
 
 <script>
 import api from "@/service/apiService";
+import { uuid } from 'vue-uuid';
 
     export default {
         name: "Author",
@@ -70,11 +71,15 @@ import api from "@/service/apiService";
         },
         methods: {
             readAuthors: async function() {
+                console.log("********************************ACATA*****************************");
                 const data = await api.readAuthors();
+                
+                console.log("********************************ACATA*****************************");
                 this.registeredAuthors = data;
             },
             createAuthor: async function() {
                 const requestData = {
+                    id: uuid.v1(),
                     firstName: this.userRegistration.firstName,
                     lastName: this.userRegistration.lastName,
                 };

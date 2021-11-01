@@ -11,7 +11,7 @@ Vue.config.productionTip = false
 
 Vue.use(VueAxios, axios);
 
-axios.defaults.baseUrl = "http://localhost:8080/api/library";
+axios.defaults.baseURL = "https://localhost:44381/api/library";
 
 new Vue({
   router,

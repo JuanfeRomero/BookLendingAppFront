@@ -79,6 +79,8 @@
 <script>
 
 import api from "@/service/apiService";
+import { uuid } from 'vue-uuid';
+
     export default {
         name: "Book",
         data() {
@@ -97,12 +99,13 @@ import api from "@/service/apiService";
         methods: {
             createBook: async function() {
             const bookRequest = {
+                id: uuid.v1(),
                 name: this.bookRegistration.bookname,
                 isbn: this.bookRegistration.isbn,
                 authorId: this.bookRegistration.authorId,
             };
             const data = await api.createBook(bookRequest);
-            console.lod(data);
+            console.log(data);
             this.bookRegistration.bookname = "";
             this.bookRegistration.isbn = "";
             this.bookRegistration.authorId = "";
@@ -124,14 +127,16 @@ import api from "@/service/apiService";
             },
             initiateEdit: async function (bookId) {
             this.editingId = bookId;
+            console.log("Empezando a editar"+ this.editingId);
             const bookData = await api.readBook(this.editingId);
             this.bookRegistration.bookname = bookData.name;
             this.bookRegistration.isbn = bookData.isbn;
-            this.bookRegistration.authorId = bookData.author.id;
+            this.bookRegistration.authorId = bookData.authorId;
             },
             editBook : async function () {
             console.log("Editing : "+this.editingId)
             const bookRequest = {
+                id: this.editingId,
                 name: this.bookRegistration.bookname,
                 isbn: this.bookRegistration.isbn,
                 authorId: this.bookRegistration.authorId,

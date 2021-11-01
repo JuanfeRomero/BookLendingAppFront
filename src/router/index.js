@@ -4,8 +4,10 @@ import Dashboard from '../components/Dashboard.vue';
 import Author from '../components/Author.vue';
 import Book from '../components/Book.vue';
 import Member from '../components/Member';
+import UUID from 'vue-uuid';
 
 Vue.use(VueRouter);
+Vue.use(UUID);
 
 const routes = [
   {

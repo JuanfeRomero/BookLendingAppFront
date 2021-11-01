@@ -85,7 +85,7 @@ import api from '@/service/apiService';
                 },
                 members: [],
                 books: [],
-                selectedBook:[],
+                selectedBooks:[],
                 responseSuccess: false,
             };
         },
@@ -100,17 +100,30 @@ import api from '@/service/apiService';
             },
             lendBook: async function() {
                 console.log("lending books");
-                let selectedIds =[];
-                this.selectedBooks.forEach((book) => {
-                    selectedIds.push(book.id);
-                });
-                console.log(`Lending Books ${selectedIds}`);
-                const request = {
-                    bookIds: selectedIds,
-                    memberId: this.bookLending.memberId,
-                };
-                const bookLendingResponse = await api.lendBook(request);
-                console.log(bookLendingResponse);
+                // let selectedIds =[];
+                var bookLendingResponse = [];
+                await Promise.all(this.selectedBooks.map(async (book) => {
+                    console.log(`Lending Books ${book.id}`);
+                    var now = new Date();
+                    const request = {
+                        available: true,
+                        StartOn: now,
+                        DueOn: new Date(now.getFullYear(), now.getMonth()+1, now.getDate()),
+                        bookId: book.id,
+                        memberId: this.bookLending.memberId
+                    }
+                    const response = await api.lendBook(request);
+                    bookLendingResponse.push(response);
+                }))
+                // const request = {
+                //     bookIds: selectedIds,
+                //     memberId: this.bookLending.memberId,
+                // };
+                // const bookLendingResponse = await api.lendBook(request);
+
+                bookLendingResponse.forEach(res =>{
+                    console.log(res);
+                })
                 this.responseSuccess = true;
                 this.selectedBooks = [];
                 this.bookLending.selectedBook = 0;
