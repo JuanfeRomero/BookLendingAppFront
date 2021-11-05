@@ -36,41 +36,91 @@
             </v-col>
             <v-col sm="6">
                 <h3>Registered Books</h3>
-                <v-simple-table>
-                    <template v-slot:default>
-                        <thead>
-                            <tr>
-                                <th class="text-left">
-                                    ID
-                                </th>
-                                <th class="text-left">
-                                    Title
-                                </th>
-                                <th class="text-left">
-                                    ISBN
-                                </th>
-                                <th class="text-left">
-                                    Action
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="book in books" :key="book.id">
-                                <td>{{ book.id }}</td>
-                                <td>{{ book.name }}</td>
-                                <td>{{ book.isbn }}</td>
-                                <td>
-                                    <v-btn icon color="pink" @click="deleteBook(book.id)">
-                                        <v-icon>mdi-delete</v-icon>
-                                    </v-btn>
-                                    <v-btn icon color="blue" @click="initiateEdit(book.id)">
-                                        <v-icon>mdi-pencil-box-outline</v-icon>
-                                    </v-btn>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </template>
-                </v-simple-table>
+                <v-card>
+                    <v-card-title>
+                        Registered Books
+                        <v-spacer/>
+                        <v-text-field
+                            v-model="search"
+                            append-icon="mdi-magnify"
+                            label="Search"
+                            single-line
+                            hide-details
+                        />
+                    </v-card-title>
+                    <v-data-table dark
+                        :headers="headers"
+                        :items="books"
+                        :search="search"
+                        :items-per-page="7"
+                        sort-by=""
+                        class="elevation-1"
+                    >
+                        <template v-slot:top>
+                            <v-toolbar flat>
+                                <v-dialog v-model="dialog"
+                                    max-width="500px"
+                                >
+                                    <v-card>
+                                        <v-card-title>
+                                            <span class="text-h5">Editar</span>
+                                        </v-card-title>
+
+                                        <v-card-text>
+                                            <v-container>
+                                                <v-row>
+                                                    <v-col
+                                                        cols="12"
+                                                        sm="6"
+                                                        md="4"
+                                                    >
+                                                        <v-text-field
+                                                            v-model="editedItem.id"
+                                                            label="ID"
+                                                            disabled
+                                                        />
+                                                    </v-col>
+                                                    <v-col
+                                                        cols="12"
+                                                        sm="6"
+                                                        md="4"
+                                                    >
+                                                        <v-text-field
+                                                            v-model="editedItem.name"
+                                                            label="Title"
+                                                        />
+                                                    </v-col>
+                                                    <v-col
+                                                        cols="12"
+                                                        sm="6"
+                                                        md="4"
+                                                    >
+                                                        <v-text-field
+                                                            v-model="editedItem.isbn"
+                                                            label="ISBN"
+                                                        />
+                                                    </v-col>
+                                                    <v-col
+                                                        cols="12"
+                                                        sm="6"
+                                                        md="4"
+                                                    >                                                        
+                                                        <v-autocomplete
+                                                            :items="authors"
+                                                            color="grey darken-3"
+                                                            item-value="id"
+                                                            item-text="firstName"
+                                                            label="Author"
+                                                            v-model="editedItem.authorId"
+                                                        />
+                                                    </v-col>
+                                                </v-row>
+                                            </v-container>
+                                        </v-card-text>
+                                                                                           
+
+                    </v-data-table>
+                </v-card>
             </v-col>
         </v-row>
     </v-container>
@@ -90,9 +140,27 @@ import { uuid } from 'vue-uuid';
                     isbn: "",
                     authorId: "",
                 },
+                headers: [
+                    { text: 'ID'},
+                    { text: 'Title'},
+                    { text: 'ISBN'},
+                    { text: 'Actions'}
+                ],
                 authors: [],
                 books: [],
                 editingId: 0,
+                editedItem: {
+                    id:'',
+                    name: '',
+                    isbn: '',
+                    authorId:''
+                },
+                defaultItem: {
+                    id:'',
+                    name:'',
+                    isbn: '',
+                    authorId: ''
+                },
                 responseSuccess: false,
             };
         },
