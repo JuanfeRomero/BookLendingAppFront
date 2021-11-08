@@ -22,15 +22,11 @@
                     :items="authors"
                     color="grey darken-3"
                     item-value="id"
-                    item-text="firstName"
+                    :item-text="item => item.firstName + ' - ' + item.lastName"
                     label="Author"
                     v-model="bookRegistration.authorId"
                 />
-
-                <v-btn v-if="editingId" color="success" @click="editBook">
-                    Edit
-                </v-btn>
-                <v-btn v-else color="primary" @click="createBook">
+                <v-btn color="primary" @click="createBook">
                     Register
                 </v-btn>
             </v-col>
@@ -48,7 +44,8 @@
                             hide-details
                         />
                     </v-card-title>
-                    <v-data-table dark
+                    <v-data-table 
+                        dark
                         :headers="headers"
                         :items="books"
                         :search="search"
@@ -56,7 +53,7 @@
                         sort-by=""
                         class="elevation-1"
                     >
-                        <template v-slot:top>
+                            <template v-slot:top>
                             <v-toolbar flat>
                                 <v-dialog v-model="dialog"
                                     max-width="500px"
@@ -109,7 +106,7 @@
                                                             :items="authors"
                                                             color="grey darken-3"
                                                             item-value="id"
-                                                            item-text="firstName"
+                                                            :item-text="item => item.firstName + ' - ' + item.lastName"
                                                             label="Author"
                                                             v-model="editedItem.authorId"
                                                         />
@@ -117,8 +114,64 @@
                                                 </v-row>
                                             </v-container>
                                         </v-card-text>
-                                                                                           
 
+                                        <v-card-actions>
+                                            <v-spacer/>
+                                            <v-btn
+                                                color="red darken-1"
+                                                text
+                                                @click="close"
+                                            >
+                                                Cancelar
+                                            </v-btn>
+                                            <v-btn
+                                                color="blue darken-1"
+                                                text
+                                                @click="editBook"
+                                            >
+                                                Guardar
+                                            </v-btn>
+                                        </v-card-actions>
+                                    </v-card>
+                                </v-dialog>
+                                <v-dialog v-model="dialogDelete" max-width="500px">
+                                    <v-card>
+                                        <v-card-title class="text-h5">
+                                            Esta seguro que desea borrar este item?
+                                        </v-card-title>
+                                        <v-card-actions>
+                                            <v-spacer/>
+                                            <v-btn color="red darken-1" text @click="closeDelete">Cancelar</v-btn>
+                                            <v-btn color="blue darken-1" text @click="deleteBook">OK</v-btn>
+                                            <v-spacer/>
+                                        </v-card-actions>
+                                    </v-card>
+                                </v-dialog>
+                            </v-toolbar>
+                        </template>
+                        <template v-slot:[`item.actions`]="{ item }">
+                            <v-icon
+                                small
+                                class="mr-2"
+                                @click="initiateEdit(item)"
+                            >
+                                mdi-pencil
+                            </v-icon>
+                            <v-icon
+                                small
+                                @click="initiateDelete(item)"
+                            >
+                                mdi-delete
+                            </v-icon>
+                        </template>
+                        <template v-slot:no-data>
+                            <v-btn
+                                color="primary"
+                                @click="initialize"
+                            >
+                                Reset
+                            </v-btn>
+                        </template>
                     </v-data-table>
                 </v-card>
             </v-col>
@@ -135,20 +188,25 @@ import { uuid } from 'vue-uuid';
         name: "Book",
         data() {
             return {
+                search:'',
+                dialog:false,
+                dialogDelete:false,
                 bookRegistration: {
                     bookname: "",
                     isbn: "",
                     authorId: "",
                 },
                 headers: [
-                    { text: 'ID'},
-                    { text: 'Title'},
-                    { text: 'ISBN'},
-                    { text: 'Actions'}
+                    { text: 'ID', value:'id'},
+                    { text: 'Title', value:'name'},
+                    { text: 'ISBN', value:'isbn'},
+                    { text: 'Author', value:"author.fullName"},
+                    { text: 'Actions', value:'actions', sortable:false},
                 ],
                 authors: [],
                 books: [],
-                editingId: 0,
+                editingId: -1,
+                editingPosition: -1,
                 editedItem: {
                     id:'',
                     name: '',
@@ -164,58 +222,98 @@ import { uuid } from 'vue-uuid';
                 responseSuccess: false,
             };
         },
+        watch: {
+            dialog(val){
+                val || this.close();
+            },
+            dialogDelete(val){
+                val || this.closeDelete();
+            },
+        },
         methods: {
+            initialize(){
+                this.readBooks();
+            },
             createBook: async function() {
-            const bookRequest = {
-                id: uuid.v1(),
-                name: this.bookRegistration.bookname,
-                isbn: this.bookRegistration.isbn,
-                authorId: this.bookRegistration.authorId,
-            };
-            const data = await api.createBook(bookRequest);
-            console.log(data);
-            this.bookRegistration.bookname = "";
-            this.bookRegistration.isbn = "";
-            this.bookRegistration.authorId = "";
-            this.readBooks();
-            this.responseSuccess = true;
+                const bookRequest = {
+                    id: uuid.v1(),
+                    name: this.bookRegistration.bookname,
+                    isbn: this.bookRegistration.isbn,
+                    authorId: this.bookRegistration.authorId,
+                };
+                const data = await api.createBook(bookRequest);
+                console.log(data);
+                this.bookRegistration.bookname = "";
+                this.bookRegistration.isbn = "";
+                this.bookRegistration.authorId = "";
+                this.readBooks();
+                this.responseSuccess = true;
             },
             readAuthors: async function() {
-            const data = await api.readAuthors();
-            this.authors = data;
+                const data = await api.readAuthors();
+                this.authors = data;
             },
             readBooks: async function() {
-            const data = await api.readBooks();
-            this.books = data;
+                const data = await api.readBooks();
+                await data.forEach(element => {
+                    element.author = this.authors.filter(x => x.id === element.authorId);
+                    element.author.fullName = `${element.author[0].firstName} ${element.author[0].lastName}`;
+                });
+                // console.log(data[0].author);
+                this.books = data;
             },
-            deleteBook: async function(bookId) {
-            const data = await api.deleteBook(bookId);
-            console.log(data);
-            this.readBooks();
+            initiateDelete:async function(book){
+                this.editingId = book.id;
+                this.editingPosition = this.books.map(e => e.id).indexOf(this.editingId);
+                this.editedItem = Object.assign({}, book);
+                this.dialogDelete = true;
             },
-            initiateEdit: async function (bookId) {
-            this.editingId = bookId;
-            console.log("Empezando a editar"+ this.editingId);
-            const bookData = await api.readBook(this.editingId);
-            this.bookRegistration.bookname = bookData.name;
-            this.bookRegistration.isbn = bookData.isbn;
-            this.bookRegistration.authorId = bookData.authorId;
+            deleteBook: async function() {
+                const data = await api.deleteBook(this.editingId);
+                console.log(data);
+                this.books.splice(this.editingPosition, 1);
+                this.closeDelete();
+            },
+            closeDelete() {
+                this.dialogDelete= false;
+                this.$nextTick(() => {
+                    this.editedItem = Object.assign({}, this.defaultItem);
+                    this.editingId = -1;
+                    this.editingPosition = -1;
+                })
+            },
+            initiateEdit: async function (book) {
+                this.editingId = book.id;
+                this.editingPosition = this.books.map(e => e.id).indexOf(this.editingId);
+                this.editedItem = Object.assign({}, book)
+                console.log("Edited Item: ");
+                console.log(this.editedItem);
+                this.dialog = true;
             },
             editBook : async function () {
-            console.log("Editing : "+this.editingId)
-            const bookRequest = {
-                id: this.editingId,
-                name: this.bookRegistration.bookname,
-                isbn: this.bookRegistration.isbn,
-                authorId: this.bookRegistration.authorId,
-            };
-            const data = await api.updateBook(this.editingId, bookRequest);
-            console.log(data);
-            this.bookRegistration.bookname = "";
-            this.bookRegistration.isbn = "";
-            this.bookRegistration.authorId = "";
-            this.editingId = 0;
-            this.readBooks();
+                console.log("Editing : "+this.editingId)
+                const bookRequest = {
+                    id: this.editingId,
+                    name: this.editedItem.name,
+                    isbn: this.editedItem.isbn,
+                    authorId: this.editedItem.authorId,
+                };
+                console.log(bookRequest);
+                const data = await api.updateBook(this.editingId, bookRequest);
+                console.log(data);
+                console.log("DATA DESPUES DE UPDATE");
+                console.log(JSON.stringify(this.editedItem, null, 3));
+                console.log(JSON.stringify(this.books[this.editingPosition], null, 3));
+                Object.assign(this.books[this.editingPosition], this.editedItem);
+                this.close();
+            },
+            close() {
+                this.dialog = false;
+                this.$nextTick(() => {
+                    this.editedItem = Object.assign({}, this.defaultItem);
+                    this.editingId = -1;
+                    this.editingPosition = -1;
+                })
             }
         },
         mounted(){

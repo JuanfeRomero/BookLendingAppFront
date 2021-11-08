@@ -2,9 +2,10 @@ import axios from 'axios';
 
 const apiClient = {
     async readAuthors() {
-        console.log("********************************READAUTHORSFIRST*****************************");
+        // console.log("********************************READAUTHORSFIRST*****************************");
         const response = await axios.get("/authors");        
-        console.log("********************************AFTER*****************************");
+        // console.log("********************************AFTER*****************************");
+        // console.log(JSON.stringify(response.data, null, 3));
         return response.data;
     },
     async createAuthor(requestData) {
@@ -20,7 +21,10 @@ const apiClient = {
         return response.data;
     },
     async readBooks() {
+        // console.log("********************************READ BOOKS ENTER*****************************");
         const response = await axios.get("/books");
+        // console.log("********************************AFTER BOOKS*****************************");
+        // console.log(JSON.stringify(response.data, null, 3));
         return response.data;
     },
     async createBook(requestData) {
